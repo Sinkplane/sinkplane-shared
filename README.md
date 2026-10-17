@@ -14,7 +14,7 @@ Extracted from sinkplane-tv — contains everything that is app-shell independen
 | `constants` | Floatplane API + OIDC endpoints, shared colors |
 | `types` | Floatplane API response types + TV companion protocol types |
 
-The package ships **TypeScript source** (`main: index.ts`) and is consumed directly by Metro/tsc/Jest — no build step. React 19 and react-native (`react-native-tvos` on TV) are assumed; native deps (`expo-secure-store`, `react-native-tcp-socket`, `react-native-zeroconf`, `expo-device`, `expo-crypto`, `expo-network`, `@preeternal/react-native-cookie-manager`) are peer dependencies that the consuming app must install and link.
+The published package ships **compiled JS + `.d.ts`** in `dist/` (built by CI with `tsc`, ESM syntax consumed by Metro/Babel — not plain Node). React 19 and react-native (`react-native-tvos` on TV) are assumed; native deps (`expo-secure-store`, `react-native-tcp-socket`, `react-native-zeroconf`, `expo-device`, `expo-crypto`, `expo-network`, `@preeternal/react-native-cookie-manager`) are peer dependencies that the consuming app must install and link.
 
 **This repo intentionally has no `node_modules` of its own.** All dependencies resolve from the consuming app's single hoisted `node_modules` (matching how a git dependency resolves on EAS) — achieved with a `node_modules` symlink so every tool (tsc, Jest, Metro) resolves the exact same module instances as the app:
 
@@ -25,10 +25,12 @@ ln -s ../sinkplane-tv/node_modules node_modules
 pnpm run typecheck # tsc resolves through the sibling install
 ```
 
-> ⚠️ **Do not run `pnpm install` here.** There is nothing to install (deps are
-> peers of the consuming app), and running it would treat the consuming app's
-> `node_modules` as this repo's and clobber it. `pnpm-workspace.yaml` disables
-> pnpm's automatic install/verify-before-script behavior for this reason.
+> ⚠️ **Do not run `pnpm install` here.** The `devDependencies` in `package.json`
+> exist for CI (typecheck + build); locally they resolve from the consuming
+> app's hoisted `node_modules` through the symlink, and running install here
+> would treat the consuming app's `node_modules` as this repo's and clobber it.
+> `pnpm-workspace.yaml` disables pnpm's automatic install/verify-before-script
+> behavior for this reason.
 
 > Note for `@preeternal/react-native-cookie-manager` on tvOS: the consuming app must apply the podspec patch (see `patches/` in sinkplane-tv).
 
@@ -76,6 +78,9 @@ Releases: pushing a `v*` tag (e.g. `v0.1.0`) triggers [.github/workflows/publish
 ```bash
 pnpm install
 pnpm run typecheck
+pnpm run build
 ```
+
+`build` compiles to `dist/` (JS + `.d.ts`) with `tsconfig.build.json`. The package entry points (`main`/`types`/`exports`) resolve to `dist/`, so a consuming app on the `link:` dependency sees the compiled output — rebuild after source edits (`pnpm run build`, or `pnpm exec tsc -p tsconfig.build.json --watch` while developing).
 
 Conventions (strict TS, ESLint/Prettier rules, `@sinkplane/shared` import style) follow the sinkplane-tv repo docs.

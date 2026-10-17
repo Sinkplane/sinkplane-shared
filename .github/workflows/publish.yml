@@ -12,11 +12,14 @@ permissions:
 
 jobs:
   publish:
-    name: Publish to GitHub Packages
+    name: Build and publish to GitHub Packages
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
 
       # Writes ~/.npmrc pointing at GitHub Packages using NODE_AUTH_TOKEN.
       - name: Set up Node
@@ -24,9 +27,17 @@ jobs:
         with:
           registry-url: https://npm.pkg.github.com
 
-      # The package ships TypeScript source and has no dependencies of its own
-      # (everything is a peer dependency resolved by the consuming app), so
-      # there is nothing to install or build before publishing.
+      # All runtime dependencies are peer dependencies (resolved by the
+      # consuming app); devDependencies exist only to typecheck and compile.
+      - name: Install
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Typecheck
+        run: pnpm run typecheck
+
+      - name: Build
+        run: pnpm run build
+
       - name: Publish
         run: npm publish
         env:
