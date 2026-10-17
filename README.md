@@ -50,7 +50,26 @@ In sinkplane-tv the dependency is a local `link:` for development:
 "@sinkplane/shared": "link:../sinkplane-shared"
 ```
 
-Once this repo is published remotely, switch consuming apps to a git dependency (e.g. `github:Sinkplane/sinkplane-shared`) so EAS builds can resolve it.
+## Installing from GitHub Packages
+
+Published as [`@sinkplane/shared`](https://github.com/orgs/Sinkplane/packages/npm/package/shared) on GitHub Packages. Consuming apps need an `.npmrc` (repo root or `~/.npmrc`) pointing the scope at the GitHub registry, with a personal access token that has `read:packages`:
+
+```ini
+@sinkplane:registry=https://npm.pkg.github.com
+//npm.pkg.github.com/:_authToken=${GITHUB_PACKAGES_TOKEN}
+```
+
+Then:
+
+```bash
+npm install @sinkplane/shared
+# or, to pin the published version instead of the link: for local dev:
+# pnpm add @sinkplane/shared@^0.1.0
+```
+
+On EAS builds, set `GITHUB_PACKAGES_TOKEN` as a build environment variable (EAS substitutes `${...}` in `.npmrc`); use a fine-grained token scoped to read the Sinkplane org packages.
+
+Releases: pushing a `v*` tag (e.g. `v0.1.0`) triggers [.github/workflows/publish.yml](.github/workflows/publish.yml), which publishes the tagged version with the built-in `GITHUB_TOKEN`.
 
 ## Development
 

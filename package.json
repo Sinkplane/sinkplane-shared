@@ -2,8 +2,11 @@
   "name": "@sinkplane/shared",
   "version": "0.1.0",
   "description": "Shared Floatplane API client, auth context, TV connection server, and React Query hooks for the Sinkplane apps",
-  "private": true,
   "packageManager": "pnpm@12.11.2",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Sinkplane/sinkplane-shared.git"
+  },
   "main": "./index.ts",
   "types": "./index.ts",
   "files": [
@@ -18,6 +21,9 @@
   ],
   "scripts": {
     "typecheck": "tsc --noEmit"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
   },
   "peerDependencies": {
     "@preeternal/react-native-cookie-manager": "^7.0.0",

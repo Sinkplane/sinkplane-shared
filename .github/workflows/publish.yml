@@ -1,0 +1,33 @@
+name: Publish
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  publish:
+    name: Publish to GitHub Packages
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Writes ~/.npmrc pointing at GitHub Packages using NODE_AUTH_TOKEN.
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          registry-url: https://npm.pkg.github.com
+
+      # The package ships TypeScript source and has no dependencies of its own
+      # (everything is a peer dependency resolved by the consuming app), so
+      # there is nothing to install or build before publishing.
+      - name: Publish
+        run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
