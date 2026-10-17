@@ -1,0 +1,34 @@
+{
+  "name": "@sinkplane/shared",
+  "version": "0.1.0",
+  "description": "Shared Floatplane API client, auth context, TV connection server, and React Query hooks for the Sinkplane apps",
+  "private": true,
+  "packageManager": "pnpm@12.11.2",
+  "main": "./index.ts",
+  "types": "./index.ts",
+  "files": [
+    "auth",
+    "connection",
+    "constants",
+    "index.ts",
+    "storage",
+    "theme",
+    "types",
+    "videos"
+  ],
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "peerDependencies": {
+    "@preeternal/react-native-cookie-manager": "^7.0.0",
+    "@tanstack/react-query": "^5.104.2",
+    "expo-crypto": "~57.0.3",
+    "expo-device": "~57.0.2",
+    "expo-network": "~57.0.2",
+    "expo-secure-store": "~57.0.4",
+    "react": "*",
+    "react-native": "*",
+    "react-native-tcp-socket": "^6.4.3",
+    "react-native-zeroconf": "^0.17.4"
+  }
+}
