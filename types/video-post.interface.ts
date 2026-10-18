@@ -9,10 +9,12 @@ export interface VideoLevel {
 }
 
 export interface TextTrack {
-  url: string;
+  id: string;
+  src: string;
   kind: string;
-  label: string;
   language: string;
+  generated: boolean;
+  processing: boolean;
 }
 
 export interface TimelineSprite {

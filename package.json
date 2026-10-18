@@ -1,6 +1,6 @@
 {
   "name": "@sinkplane/shared",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Shared Floatplane API client, auth context, TV connection server, and React Query hooks for the Sinkplane apps",
   "packageManager": "pnpm@12.11.2",
   "repository": {
