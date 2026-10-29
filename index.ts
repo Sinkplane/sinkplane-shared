@@ -58,6 +58,16 @@ export {
   type RefreshTokenResult,
 } from './auth/tokenRefresh';
 export { useOIDCDeviceFlow, type DeviceAuthResponse, type OIDCDeviceFlowState, type OIDCStatus, type TokenResponse } from './auth/useOIDCDeviceFlow';
+export {
+  FloatplaneApiError,
+  checkFor2faLogin,
+  getCaptchaInfo,
+  loginWithPassword,
+  logout,
+  type CaptchaInfo,
+  type CaptchaVariantInfo,
+  type LoginResponse,
+} from './auth/passwordLogin';
 export { fetchCreatorList, useGetCreatorList } from './auth/useGetCreatorList';
 export { fetchProfile, useGetProfile } from './auth/useGetProfile';
 export { fetchSubscriptions, useGetSubscriptions } from './auth/useGetSubscription';

@@ -2,6 +2,13 @@ import { API_BASE_URL } from '../constants/api';
 
 type RefreshCallback = () => Promise<string | null>;
 
+// floatplane.com sits behind Cloudflare bot management, which challenges
+// non-browser User-Agents (RN/okhttp/CFNetwork defaults get an interstitial).
+// The official Floatplane apps ship the web frontend in a WebView, so native
+// code must present itself as a browser.
+export const BROWSER_USER_AGENT =
+  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Safari/605.1.15';
+
 // Module-level state for the refresh callback (registered by SessionProvider)
 let refreshCallback: RefreshCallback | null = null;
 
@@ -79,18 +86,16 @@ export async function authenticatedFetch(url: string, token: string, options: Au
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
+    'User-Agent': BROWSER_USER_AGENT,
     ...customHeaders,
   };
 
-  // If we have a token and auth is enabled
+  // If we have a token and auth is enabled, attach it as a Bearer token.
+  // Floatplane's own web/native clients use `Authorization: Bearer` for both
+  // OIDC JWTs and the opaque session token returned by /api/v3/auth/login
+  // (returnSessionToken), so no format sniffing is needed.
   if (auth && token) {
-    // If the token starts with 'ey', it's a JWT — use Bearer auth
-    if (token.startsWith('ey')) {
-      headers.Authorization = `Bearer ${token}`;
-    }
-    // If it's not a JWT, it's likely a sails.sid cookie from the companion app.
-    // We set this cookie in CookieManager, but we can also pass it explicitly
-    // or rely on credentials: 'include' if the fetch implementation supports it.
+    headers.Authorization = `Bearer ${token}`;
   }
 
   let response = await fetch(fullUrl, {

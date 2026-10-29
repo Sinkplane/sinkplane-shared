@@ -6,7 +6,7 @@ Extracted from sinkplane-tv — contains everything that is app-shell independen
 
 | Area | Contents |
 |---|---|
-| `auth` | `SessionProvider` / `useSession` auth context, `authenticatedFetch` API client (Bearer + sails.sid cookie support, 401 refresh-retry), OIDC device flow, token refresh, profile/subscription/creator queries |
+| `auth` | `SessionProvider` / `useSession` auth context, `authenticatedFetch` API client (Bearer auth + browser UA, 401 refresh-retry), OIDC device flow, username/password login (`passwordLogin.ts`: Turnstile captcha info, `/api/v3/auth/login`, 2FA, logout), token refresh, profile/subscription/creator queries |
 | `connection` | `useTVServer` — the remote connection server (TCP on port 9999 + Bonjour/Zeroconf discovery) that companion apps connect to |
 | `videos` | TanStack Query hooks for Floatplane content (videos, posts, delivery, progress, history) |
 | `storage` | `useStorageState` — secure-store backed state hook |
