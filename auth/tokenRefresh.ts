@@ -28,14 +28,14 @@ export async function refreshAccessToken(refreshToken: string): Promise<RefreshT
 
   if (!response.ok) {
     const errorText = await response.text();
-    throw new ApiStatusError(`Token refresh failed: ${response.status} - ${errorText}`, response.status);
+    throw new ApiStatusError(`Token refresh failed: ${response.status} - ${errorText}`, response);
   }
 
   const data = await response.json();
 
   if (data.error) {
     // The provider rejected the refresh token (e.g. invalid_grant).
-    throw new ApiStatusError(`Token refresh error: ${data.error} - ${data.error_description || ''}`, 400);
+    throw new ApiStatusError(`Token refresh error: ${data.error} - ${data.error_description || ''}`, { status: 400 });
   }
 
   return {

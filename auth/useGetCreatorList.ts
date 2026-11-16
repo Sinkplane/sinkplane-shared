@@ -13,7 +13,7 @@ export const fetchCreatorList = async (token: string, _tokenExpiration?: string,
 
   if (!response.ok) {
     const errorText = await response.text();
-    throw new ApiStatusError(`Failed to fetch creator list: ${response.status} - ${errorText}`, response.status);
+    throw new ApiStatusError(`Failed to fetch creator list: ${response.status} - ${errorText}`, response);
   }
 
   return response.json();
