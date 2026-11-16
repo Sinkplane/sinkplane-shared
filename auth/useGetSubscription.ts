@@ -1,14 +1,14 @@
 import { useQuery } from '@tanstack/react-query';
 
 import { Subscription } from '../types/subscriptions.interface';
-import { authenticatedFetch } from './apiClient';
+import { ApiStatusError, authenticatedFetch } from './apiClient';
 
 export const fetchSubscriptions = async (token: string, _tokenExpiration?: string): Promise<Subscription[]> => {
   const response = await authenticatedFetch('/api/v3/user/subscriptions?active=true', token);
 
   if (!response.ok) {
     const errorText = await response.text();
-    throw new Error(`Failed to fetch subscriptions: ${response.status} - ${errorText}`);
+    throw new ApiStatusError(`Failed to fetch subscriptions: ${response.status} - ${errorText}`, response.status);
   }
 
   return response.json();

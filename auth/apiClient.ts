@@ -16,6 +16,24 @@ let refreshCallback: RefreshCallback | null = null;
 let refreshInProgress: Promise<string | null> | null = null;
 
 /**
+ * The server answered with an error status. Unlike a request that never got an answer (no network,
+ * timeouts), a 400 / 401 / 403 means the server rejected the session.
+ */
+export class ApiStatusError extends Error {
+  constructor(
+    message: string,
+    readonly status: number,
+  ) {
+    super(message);
+    this.name = 'ApiStatusError';
+  }
+
+  get rejectsSession(): boolean {
+    return this.status === 400 || this.status === 401 || this.status === 403;
+  }
+}
+
+/**
  * Register the refresh callback from the auth context.
  * Called once by SessionProvider on mount.
  */

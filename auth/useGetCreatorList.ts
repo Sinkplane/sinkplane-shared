@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 
 import { Creator } from '../types/creator-list.interface';
-import { authenticatedFetch } from './apiClient';
+import { ApiStatusError, authenticatedFetch } from './apiClient';
 
 export const fetchCreatorList = async (token: string, _tokenExpiration?: string, creatorIds?: string[]): Promise<Creator[]> => {
   if (!creatorIds || creatorIds.length === 0) return [];
@@ -13,7 +13,7 @@ export const fetchCreatorList = async (token: string, _tokenExpiration?: string,
 
   if (!response.ok) {
     const errorText = await response.text();
-    throw new Error(`Failed to fetch creator list: ${response.status} - ${errorText}`);
+    throw new ApiStatusError(`Failed to fetch creator list: ${response.status} - ${errorText}`, response.status);
   }
 
   return response.json();
