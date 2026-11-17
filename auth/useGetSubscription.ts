@@ -8,7 +8,7 @@ export const fetchSubscriptions = async (token: string, _tokenExpiration?: strin
 
   if (!response.ok) {
     const errorText = await response.text();
-    throw new ApiStatusError(`Failed to fetch subscriptions: ${response.status} - ${errorText}`, response.status);
+    throw new ApiStatusError(`Failed to fetch subscriptions: ${response.status} - ${errorText}`, response);
   }
 
   return response.json();
