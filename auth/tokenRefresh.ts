@@ -1,4 +1,5 @@
 import { OIDC_CLIENT_ID, OIDC_TOKEN_ENDPOINT } from '../constants/api';
+import { ApiStatusError } from './apiClient';
 
 export interface RefreshTokenResult {
   accessToken: string;
@@ -27,13 +28,14 @@ export async function refreshAccessToken(refreshToken: string): Promise<RefreshT
 
   if (!response.ok) {
     const errorText = await response.text();
-    throw new Error(`Token refresh failed: ${response.status} - ${errorText}`);
+    throw new ApiStatusError(`Token refresh failed: ${response.status} - ${errorText}`, response);
   }
 
   const data = await response.json();
 
   if (data.error) {
-    throw new Error(`Token refresh error: ${data.error} - ${data.error_description || ''}`);
+    // The provider rejected the refresh token (e.g. invalid_grant).
+    throw new ApiStatusError(`Token refresh error: ${data.error} - ${data.error_description || ''}`, { status: 400 });
   }
 
   return {

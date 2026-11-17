@@ -5,3 +5,5 @@ dist/
 *.log
 .DS_Store
 pnpm-lock.yaml
+# Git guard approval window (local only; see .claude/hooks/git-guard.mjs)
+.claude/git-approval.json

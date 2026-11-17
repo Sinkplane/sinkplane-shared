@@ -16,6 +16,28 @@ let refreshCallback: RefreshCallback | null = null;
 let refreshInProgress: Promise<string | null> | null = null;
 
 /**
+ * The server answered with an error status. Unlike a request that never got an answer (no network,
+ * timeouts), a 400 / 401 / 403 means the server rejected the session, except a Cloudflare challenge
+ * (a 403 with `cf-mitigated: challenge`): that's the bot check in front of the API, not a verdict
+ * on the session.
+ */
+export class ApiStatusError extends Error {
+  readonly status: number;
+  private readonly challenge: boolean;
+
+  constructor(message: string, response: { status: number; headers?: { get(name: string): string | null } }) {
+    super(message);
+    this.name = 'ApiStatusError';
+    this.status = response.status;
+    this.challenge = response.headers?.get('cf-mitigated') === 'challenge';
+  }
+
+  get rejectsSession(): boolean {
+    return !this.challenge && (this.status === 400 || this.status === 401 || this.status === 403);
+  }
+}
+
+/**
  * Register the refresh callback from the auth context.
  * Called once by SessionProvider on mount.
  */

@@ -7,7 +7,7 @@ import { useStorageState } from '../storage/useStorageState';
 import { fetchSubscriptions } from './useGetSubscription';
 import { fetchCreatorList } from './useGetCreatorList';
 import { refreshAccessToken, isTokenExpiringSoon } from './tokenRefresh';
-import { registerRefreshCallback, unregisterRefreshCallback } from './apiClient';
+import { ApiStatusError, registerRefreshCallback, unregisterRefreshCallback } from './apiClient';
 
 interface SignInParams {
   token: string;
@@ -31,6 +31,10 @@ export interface AuthState {
   setCreator: (creator: Creator) => void;
   isLoading: boolean;
   refreshSession: () => Promise<string | null>;
+  /** Signed in, but the session couldn't be checked for lack of network (it is kept). */
+  offline: boolean;
+  /** Loads the subscriptions and creators again (clears `offline` when it works). */
+  retry: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthState>({
@@ -40,7 +44,20 @@ const AuthContext = createContext<AuthState>({
   setCreator: () => null,
   isLoading: false,
   refreshSession: async () => null,
+  offline: false,
+  retry: async () => undefined,
 });
+
+/**
+ * Whether the server rejected the session: it said no (400 / 401 / 403), or the account has no
+ * subscriptions or creators. Anything else (no network: React Native's fetch throws a TypeError, Expo's
+ * a FetchError; timeouts; 5xx) leaves the session as is.
+ */
+const rejectsSession = (err: unknown): boolean => typeof err === 'string' || (err instanceof ApiStatusError && err.rejectsSession);
+
+// Only a known, passed expiration counts (password-login sessions have none).
+const hasExpired = (tokenExpiration: string | null | undefined): boolean =>
+  !!tokenExpiration && new Date(tokenExpiration).getTime() <= Date.now();
 
 // This hook can be used to access the user info.
 export function useSession() {
@@ -62,6 +79,14 @@ export function SessionProvider({ children }: PropsWithChildren) {
   const [subscription, setSubscription] = useState<Subscription>();
   const [creators, setCreators] = useState<Creator[]>();
   const [creator, setCreator] = useState<Creator>();
+  // The session couldn't be checked for lack of network: kept as is (offline mode) until retry().
+  const [offline, setOffline] = useState(false);
+  // Read by error handlers that callbacks captured earlier (refreshSession), so they see the
+  // latest expiration.
+  const tokenExpirationRef = useRef(tokenExpiration);
+  tokenExpirationRef.current = tokenExpiration;
+  // Bumped on sign-in / sign-out, so a retry() still in flight can't touch a later session.
+  const sessionRef = useRef(0);
 
   // Ref for proactive refresh timer
   const refreshTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -77,6 +102,12 @@ export function SessionProvider({ children }: PropsWithChildren) {
 
   const handleFetchErr = (err?: Error | unknown) => {
     console.error('[Auth] Error during data fetch:', err);
+    // Offline is not signed out: keep the stored session unless it was rejected or has expired.
+    if (!rejectsSession(err) && !hasExpired(tokenExpirationRef.current)) {
+      setOffline(true);
+      return err;
+    }
+    setOffline(false);
     setToken(undefined);
     setUser(undefined);
     setRefreshToken(undefined);
@@ -84,9 +115,10 @@ export function SessionProvider({ children }: PropsWithChildren) {
     return err;
   };
 
-  const fetchSubscriptionCreators = async (t: string, _te?: string) => {
+  const fetchSubscriptionCreators = async (t: string, _te?: string, isStale: () => boolean = () => false) => {
     // Fetch subscriptions using Bearer token
     const subscriptionsResult = await fetchSubscriptions(t, _te);
+    if (isStale()) return;
     if (!subscriptionsResult || subscriptionsResult.length === 0) return handleFetchErr('No subscriptions found');
 
     setSubscriptions(subscriptionsResult);
@@ -94,12 +126,26 @@ export function SessionProvider({ children }: PropsWithChildren) {
     // Fetch creators for the subscriptions
     const creatorIds = subscriptionsResult.map(sub => sub.creator);
     const creatorsListResult = await fetchCreatorList(t, _te, creatorIds);
+    if (isStale()) return;
     if (!creatorsListResult || creatorsListResult.length === 0) {
       return handleFetchErr('No creators found');
     }
 
     setCreators(creatorsListResult);
     setCreator(creatorsListResult[0]);
+    setOffline(false);
+  };
+
+  // Loads the subscriptions again, e.g. after an offline launch.
+  const retry = async () => {
+    if (!token) return;
+    const session = sessionRef.current;
+    const isStale = () => sessionRef.current !== session;
+    try {
+      await fetchSubscriptionCreators(token, tokenExpiration || undefined, isStale);
+    } catch (error) {
+      if (!isStale()) handleFetchErr(error);
+    }
   };
 
   // Refresh the session using the stored refresh token
@@ -210,6 +256,7 @@ export function SessionProvider({ children }: PropsWithChildren) {
   const signIn = async ({ token: t, user: u, tokenExpiration: tE, refreshToken: rT }: SignInParams) => {
     try {
       console.info('[Auth] Signing in user:', u);
+      sessionRef.current += 1;
 
       setToken(t);
       setUser(JSON.stringify(u));
@@ -228,6 +275,7 @@ export function SessionProvider({ children }: PropsWithChildren) {
     }
   };
   const signOut = async () => {
+    sessionRef.current += 1;
     clearRefreshTimer();
     setToken(undefined);
     setUser(undefined);
@@ -236,6 +284,7 @@ export function SessionProvider({ children }: PropsWithChildren) {
     setCreator(undefined);
     setRefreshToken(undefined);
     setTokenExpiration(undefined);
+    setOffline(false);
   };
 
   return (
@@ -255,6 +304,8 @@ export function SessionProvider({ children }: PropsWithChildren) {
         creator,
         isLoading,
         refreshSession,
+        offline,
+        retry,
       }}
     >
       {children}
