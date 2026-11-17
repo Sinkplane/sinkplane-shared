@@ -7,7 +7,7 @@ import { useStorageState } from '../storage/useStorageState';
 import { fetchSubscriptions } from './useGetSubscription';
 import { fetchCreatorList } from './useGetCreatorList';
 import { refreshAccessToken, isTokenExpiringSoon } from './tokenRefresh';
-import { registerRefreshCallback, unregisterRefreshCallback } from './apiClient';
+import { ApiStatusError, registerRefreshCallback, unregisterRefreshCallback } from './apiClient';
 
 interface SignInParams {
   token: string;
@@ -48,8 +48,12 @@ const AuthContext = createContext<AuthState>({
   retry: async () => undefined,
 });
 
-// fetch() rejects with a TypeError when the request never reached the server (no network).
-const isNetworkError = (err: unknown): boolean => err instanceof TypeError;
+/**
+ * Whether the server rejected the session: it said no (400 / 401 / 403), or the account has no
+ * subscriptions or creators. Anything else (no network: React Native's fetch throws a TypeError, Expo's
+ * a FetchError; timeouts; 5xx) leaves the session as is.
+ */
+const rejectsSession = (err: unknown): boolean => typeof err === 'string' || (err instanceof ApiStatusError && err.rejectsSession);
 
 // Only a known, passed expiration counts (password-login sessions have none).
 const hasExpired = (tokenExpiration: string | null | undefined): boolean =>
@@ -98,8 +102,8 @@ export function SessionProvider({ children }: PropsWithChildren) {
 
   const handleFetchErr = (err?: Error | unknown) => {
     console.error('[Auth] Error during data fetch:', err);
-    // Offline is not signed out: keep the stored session unless it has expired.
-    if (isNetworkError(err) && !hasExpired(tokenExpirationRef.current)) {
+    // Offline is not signed out: keep the stored session unless it was rejected or has expired.
+    if (!rejectsSession(err) && !hasExpired(tokenExpirationRef.current)) {
       setOffline(true);
       return err;
     }
